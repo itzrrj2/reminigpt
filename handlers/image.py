@@ -28,8 +28,17 @@ def image_handlers(app):
                 parse_mode="HTML"
             )
             return
+        else:
+            await message.reply("✅ You are verified! Send a photo or image document to begin processing.")
 
-        file = message.photo[-1] if message.photo else message.document
+        # Safe file detection
+        if message.photo:
+            file = message.photo[-1] if isinstance(message.photo, list) else message.photo
+        elif message.document:
+            file = message.document
+        else:
+            await message.reply("❌ Only photo or image document is supported.")
+            return
 
         file_info = await client.get_file(file.file_id)
         file_path = file_info.file_path
@@ -71,7 +80,7 @@ def image_handlers(app):
         # Check join button
         if data == "checkjoin":
             if await check_subscription(client, user_id):
-                await callback_query.message.reply("✅ You are verified! You can now use the bot.")
+                await callback_query.message.reply("✅ You are verified! Send a photo to start.")
             else:
                 join_buttons = [
                     [InlineKeyboardButton(f"Join @{channel}", url=f"https://t.me/{channel}")]
@@ -86,10 +95,10 @@ def image_handlers(app):
                 )
             return
 
-        # Refresh button logic
+        # Refresh button
         if data == "refresh":
             if await check_subscription(client, user_id):
-                await callback_query.message.reply("✅ You are verified! You can now use the bot.")
+                await callback_query.message.reply("✅ You are verified! You can use the bot now.")
             else:
                 join_buttons = [
                     [InlineKeyboardButton(f"Join @{channel}", url=f"https://t.me/{channel}")]
@@ -104,7 +113,7 @@ def image_handlers(app):
                 )
             return
 
-        # Handle tools
+        # Handle image tools
         if any(data.startswith(tool) for tool in ['enhance', 'removebg', 'restore', 'colorize', 'upscale']):
             tool, image_url = data.split()
             processing_msg = await callback_query.message.reply(f"🔄 {tool.capitalize()}ing your image...")
