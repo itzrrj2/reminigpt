@@ -1,9 +1,11 @@
 from pyrogram import filters
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from config import *
 from utils.helpers import (
-    check_user_in_channel, get_file_size, fetch_file_blob, upload_to_ar
+    check_user_in_channel, get_file_size, fetch_file_blob, upload_to_ar, process_image
 )
+import aiohttp
+from io import BytesIO
 
 def image_handlers(app):
     @app.on_message(filters.photo | filters.document)
@@ -46,22 +48,29 @@ def image_handlers(app):
 
         await message.reply("✅ Image uploaded! Choose what you want to do:", reply_markup=buttons)
 
-from pyrogram.types import CallbackQuery
-from utils.helpers import process_image
 
-@app.on_callback_query()
-async def handle_callback(client, callback_query: CallbackQuery):
-    data = callback_query.data
-    chat_id = callback_query.message.chat.id
+    @app.on_callback_query()
+    async def handle_callback(client, callback_query: CallbackQuery):
+        data = callback_query.data
+        chat_id = callback_query.message.chat.id
 
-    if any(data.startswith(tool) for tool in ['enhance', 'removebg', 'restore', 'colorize', 'upscale']):
-        tool, image_url = data.split()
-        processing_msg = await callback_query.message.reply(f"🔄 {tool.capitalize()}ing your image...")
+        if any(data.startswith(tool) for tool in ['enhance', 'removebg', 'restore', 'colorize', 'upscale']):
+            tool, image_url = data.split()
+            processing_msg = await callback_query.message.reply(f"🔄 {tool.capitalize()}ing your image...")
 
-        result_url = await process_image(image_url, tool)
-        if not result_url:
-            await processing_msg.edit_text("❌ Failed to process image.")
-            return
+            result_url = await process_image(image_url, tool)
+            if not result_url:
+                await processing_msg.edit_text("❌ Failed to process image.")
+                return
 
-        await processing_msg.edit_text(f"✅ {tool.capitalize()} complete!")
-        await client.send_photo(chat_id, result_url, caption=f"{tool.capitalize()} complete! ✅")
+            await processing_msg.edit_text(f"✅ {tool.capitalize()} complete!")
+
+            # Download the result and send as document
+            async with aiohttp.ClientSession() as session:
+                async with session.get(result_url) as resp:
+                    image_bytes = await resp.read()
+
+            buffer = BytesIO(image_bytes)
+            buffer.name = f"{tool}_result.jpg"
+
+            await client.send_document(chat_id, buffer, caption=f"{tool.capitalize()}d image ✅")
