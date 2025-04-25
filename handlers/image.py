@@ -25,13 +25,13 @@ def image_handlers(app):
             await message.reply("❌ File too large (max 50MB)")
             return
 
-        uploading_msg = await message.reply("📤 Uploading to SR Hosting...")
+        uploading_msg = await message.reply("📤 Uploading to AR Hosting...")
         blob = await fetch_file_blob(file_url)
         hosted_url = await upload_to_ar(blob, "uploaded.jpg")
         await uploading_msg.delete()
 
         if not hosted_url:
-            await message.reply("❌ Upload failed. Try again If Still Didnt Work Dm - @SrxSupportBot")
+            await message.reply("❌ Upload failed.")
             return
 
         buttons = InlineKeyboardMarkup([
