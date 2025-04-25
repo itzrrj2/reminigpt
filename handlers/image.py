@@ -15,10 +15,15 @@ def image_handlers(app):
         chat_id = message.chat.id
 
         if not await check_subscription(client, user.id):
-            channels_list = "\n".join([f"👉 [Join @{ch}](https://t.me/{ch})" for ch in REQUIRED_CHANNELS])
-            await message.reply_text(
-                f"⚠️ *You must join the following channels to use this bot:*\n\n{channels_list}",
-                parse_mode="Markdown", disable_web_page_preview=True
+            buttons = InlineKeyboardMarkup([
+                [InlineKeyboardButton("Join Sr_robots", url="https://t.me/Sr_robots")],
+                [InlineKeyboardButton("Join Backup", url="https://t.me/Sr_robots_backup")],
+                [InlineKeyboardButton("✅ I Joined", callback_data="checkjoin")]
+            ])
+            await message.reply(
+                "🚫 <b>You must join the required channels to use this bot.</b>\n\nAfter joining, tap <b>I Joined</b>.",
+                reply_markup=buttons,
+                parse_mode="html"
             )
             return
 
@@ -59,26 +64,12 @@ def image_handlers(app):
         data = callback_query.data
         chat_id = callback_query.message.chat.id
         user_id = callback_query.from_user.id
-        name = callback_query.from_user.first_name
 
-        if not await check_subscription(client, user_id):
-            channels_list = "\n".join([f"👉 [Join @{ch}](https://t.me/{ch})" for ch in REQUIRED_CHANNELS])
-            await callback_query.message.reply_text(
-                f"⚠️ *You must join the following channels to use this bot:*\n\n{channels_list}",
-                parse_mode="Markdown", disable_web_page_preview=True
-            )
-            return
-
-        if data == "checkjoin" or data == "refresh":
-            if await check_user_in_channel(client, user_id):
-                await callback_query.message.reply("✅ You are a member of the channel! You can use the bot now.")
+        if data == "checkjoin":
+            if await check_subscription(client, user_id):
+                await callback_query.message.reply("✅ You are verified! You can now use the bot.")
             else:
-                buttons = InlineKeyboardMarkup([
-                    [InlineKeyboardButton("Join Channel 📢", url="https://t.me/sr_robots")],
-                    [InlineKeyboardButton("Check Join Status 🔍", callback_data="checkjoin")],
-                    [InlineKeyboardButton("Refresh 🔄", callback_data="refresh")]
-                ])
-                await callback_query.message.reply(f"Hey {name} 👋\n\n❌ You are not in the channel yet. Please join and try again.", reply_markup=buttons)
+                await callback_query.message.reply("❌ You still haven't joined all required channels.")
             return
 
         if any(data.startswith(tool) for tool in ['enhance', 'removebg', 'restore', 'colorize', 'upscale']):
@@ -92,7 +83,6 @@ def image_handlers(app):
 
             await processing_msg.edit_text(f"✅ {tool.capitalize()} complete!")
 
-            # Download and send as document
             async with aiohttp.ClientSession() as session:
                 async with session.get(result_url) as resp:
                     image_bytes = await resp.read()
