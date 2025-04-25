@@ -45,3 +45,23 @@ def image_handlers(app):
         ])
 
         await message.reply("✅ Image uploaded! Choose what you want to do:", reply_markup=buttons)
+
+from pyrogram.types import CallbackQuery
+from utils.helpers import process_image
+
+@app.on_callback_query()
+async def handle_callback(client, callback_query: CallbackQuery):
+    data = callback_query.data
+    chat_id = callback_query.message.chat.id
+
+    if any(data.startswith(tool) for tool in ['enhance', 'removebg', 'restore', 'colorize', 'upscale']):
+        tool, image_url = data.split()
+        processing_msg = await callback_query.message.reply(f"🔄 {tool.capitalize()}ing your image...")
+
+        result_url = await process_image(image_url, tool)
+        if not result_url:
+            await processing_msg.edit_text("❌ Failed to process image.")
+            return
+
+        await processing_msg.edit_text(f"✅ {tool.capitalize()} complete!")
+        await client.send_photo(chat_id, result_url, caption=f"{tool.capitalize()} complete! ✅")
