@@ -6,7 +6,7 @@ def command_handlers(app):
     async def start(client, message: Message):
         name = message.from_user.first_name
         buttons = InlineKeyboardMarkup([
-            [InlineKeyboardButton("Join Channel 📢", url="https://t.me/Ashlynn_Repository")],
+            [InlineKeyboardButton("Join Channel 📢", url="https://t.me/Sr_robots")],
             [InlineKeyboardButton("Check Join Status 🔍", callback_data="checkjoin")],
             [InlineKeyboardButton("Refresh 🔄", callback_data="refresh")]
         ])
