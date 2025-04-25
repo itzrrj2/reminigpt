@@ -25,3 +25,17 @@ async def upload_to_ar(file_bytes, filename):
         async with session.post(AR_HOSTING_API, data=data) as resp:
             res = await resp.json()
             return res.get("data")
+
+async def process_image(image_url, tool):
+    tools = {
+        'upscale': 'upscale',
+        'restore': 'restore',
+        'enhance': 'enhance',
+        'removebg': 'removebg',
+        'colorize': 'colorize'
+    }
+    url = f"https://reminisrbot.shresthstakeyt.workers.dev/?url={image_url}&tool={tools[tool]}"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            data = await resp.json()
+            return data.get("result", {}).get("resultImageUrl")
