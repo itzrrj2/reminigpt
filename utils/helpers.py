@@ -2,6 +2,7 @@ import aiohttp
 from config import CHANNEL_ID, AR_HOSTING_API
 
 async def check_user_in_channel(client, user_id):
+    print(f"Checking user {user_id} in channel {CHANNEL_ID}")  # 🐞 Debug line
     try:
         member = await client.get_chat_member(CHANNEL_ID, user_id)
         return member.status in ("member", "administrator", "creator")
