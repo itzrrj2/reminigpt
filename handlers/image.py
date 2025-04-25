@@ -2,7 +2,8 @@ from pyrogram import filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from config import *
 from utils.helpers import (
-    check_user_in_channel, get_file_size, fetch_file_blob, upload_to_ar, process_image
+    check_user_in_channel, check_subscription, get_file_size,
+    fetch_file_blob, upload_to_ar, process_image
 )
 import aiohttp
 from io import BytesIO
@@ -13,8 +14,12 @@ def image_handlers(app):
         user = message.from_user
         chat_id = message.chat.id
 
-        if not await check_user_in_channel(client, user.id):
-            await message.reply_text("❌ Please join our channel to use this bot!")
+        if not await check_subscription(client, user.id):
+            channels_list = "\n".join([f"👉 [Join @{ch}](https://t.me/{ch})" for ch in REQUIRED_CHANNELS])
+            await message.reply_text(
+                f"⚠️ *You must join the following channels to use this bot:*\n\n{channels_list}",
+                parse_mode="Markdown", disable_web_page_preview=True
+            )
             return
 
         file = message.photo[-1] if message.photo else message.document
@@ -56,20 +61,26 @@ def image_handlers(app):
         user_id = callback_query.from_user.id
         name = callback_query.from_user.first_name
 
-        # Handle checkjoin / refresh
+        if not await check_subscription(client, user_id):
+            channels_list = "\n".join([f"👉 [Join @{ch}](https://t.me/{ch})" for ch in REQUIRED_CHANNELS])
+            await callback_query.message.reply_text(
+                f"⚠️ *You must join the following channels to use this bot:*\n\n{channels_list}",
+                parse_mode="Markdown", disable_web_page_preview=True
+            )
+            return
+
         if data == "checkjoin" or data == "refresh":
             if await check_user_in_channel(client, user_id):
                 await callback_query.message.reply("✅ You are a member of the channel! You can use the bot now.")
             else:
                 buttons = InlineKeyboardMarkup([
-                    [InlineKeyboardButton("Join Channel 📢", url="https://t.me/SR_Robots")],
+                    [InlineKeyboardButton("Join Channel 📢", url="https://t.me/sr_robots")],
                     [InlineKeyboardButton("Check Join Status 🔍", callback_data="checkjoin")],
                     [InlineKeyboardButton("Refresh 🔄", callback_data="refresh")]
                 ])
                 await callback_query.message.reply(f"Hey {name} 👋\n\n❌ You are not in the channel yet. Please join and try again.", reply_markup=buttons)
             return
 
-        # Handle image processing tools
         if any(data.startswith(tool) for tool in ['enhance', 'removebg', 'restore', 'colorize', 'upscale']):
             tool, image_url = data.split()
             processing_msg = await callback_query.message.reply(f"🔄 {tool.capitalize()}ing your image...")
@@ -90,12 +101,3 @@ def image_handlers(app):
             buffer.name = f"{tool}_result.jpg"
 
             await client.send_document(chat_id, buffer, caption=f"{tool.capitalize()}d image ✅")
-
-if not await check_subscription(client, user.id):
-    channels_list = "\n".join([f"👉 [Join @{ch}](https://t.me/{ch})" for ch in REQUIRED_CHANNELS])
-    await message.reply_text(
-        f"⚠️ *You must join the following channels to use this bot:*\n\n{channels_list}",
-        parse_mode="Markdown",
-        disable_web_page_preview=True
-    )
-    return
