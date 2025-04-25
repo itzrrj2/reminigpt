@@ -14,20 +14,23 @@ def image_handlers(app):
         user = message.from_user
         chat_id = message.chat.id
 
+        # Force Join System
         if not await check_subscription(client, user.id):
-            buttons = InlineKeyboardMarkup([
-                [InlineKeyboardButton("Join Sr_robots", url="https://t.me/Sr_robots")],
-                [InlineKeyboardButton("Join Backup", url="https://t.me/Sr_robots_backup")],
-                [InlineKeyboardButton("✅ I Joined", callback_data="checkjoin")]
-            ])
+            join_buttons = [
+                [InlineKeyboardButton(f"Join @{channel}", url=f"https://t.me/{channel}")]
+                for channel in REQUIRED_CHANNELS
+            ]
+            join_buttons.append([InlineKeyboardButton("✅ I Joined", callback_data="checkjoin")])
+            join_buttons.append([InlineKeyboardButton("🔄 Refresh", callback_data="refresh")])
             await message.reply(
                 "🚫 <b>You must join the required channels to use this bot.</b>\n\nAfter joining, tap <b>I Joined</b>.",
-                reply_markup=buttons,
-                parse_mode="html"
+                reply_markup=InlineKeyboardMarkup(join_buttons),
+                parse_mode="HTML"
             )
             return
 
         file = message.photo[-1] if message.photo else message.document
+
         file_info = await client.get_file(file.file_id)
         file_path = file_info.file_path
         file_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
@@ -65,13 +68,43 @@ def image_handlers(app):
         chat_id = callback_query.message.chat.id
         user_id = callback_query.from_user.id
 
+        # Check join button
         if data == "checkjoin":
             if await check_subscription(client, user_id):
                 await callback_query.message.reply("✅ You are verified! You can now use the bot.")
             else:
-                await callback_query.message.reply("❌ You still haven't joined all required channels.")
+                join_buttons = [
+                    [InlineKeyboardButton(f"Join @{channel}", url=f"https://t.me/{channel}")]
+                    for channel in REQUIRED_CHANNELS
+                ]
+                join_buttons.append([InlineKeyboardButton("✅ I Joined", callback_data="checkjoin")])
+                join_buttons.append([InlineKeyboardButton("🔄 Refresh", callback_data="refresh")])
+                await callback_query.message.reply(
+                    "❌ You still haven't joined all required channels.",
+                    reply_markup=InlineKeyboardMarkup(join_buttons),
+                    parse_mode="HTML"
+                )
             return
 
+        # Refresh button logic
+        if data == "refresh":
+            if await check_subscription(client, user_id):
+                await callback_query.message.reply("✅ You are verified! You can now use the bot.")
+            else:
+                join_buttons = [
+                    [InlineKeyboardButton(f"Join @{channel}", url=f"https://t.me/{channel}")]
+                    for channel in REQUIRED_CHANNELS
+                ]
+                join_buttons.append([InlineKeyboardButton("✅ I Joined", callback_data="checkjoin")])
+                join_buttons.append([InlineKeyboardButton("🔄 Refresh", callback_data="refresh")])
+                await callback_query.message.reply(
+                    "❌ You still haven't joined all required channels.",
+                    reply_markup=InlineKeyboardMarkup(join_buttons),
+                    parse_mode="HTML"
+                )
+            return
+
+        # Handle tools
         if any(data.startswith(tool) for tool in ['enhance', 'removebg', 'restore', 'colorize', 'upscale']):
             tool, image_url = data.split()
             processing_msg = await callback_query.message.reply(f"🔄 {tool.capitalize()}ing your image...")
