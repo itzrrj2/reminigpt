@@ -2,7 +2,6 @@ import aiohttp
 from config import CHANNEL_ID, AR_HOSTING_API, REQUIRED_CHANNELS
 
 async def check_user_in_channel(client, user_id):
-    print(f"Checking user {user_id} in channel {CHANNEL_ID}")
     try:
         member = await client.get_chat_member(CHANNEL_ID, user_id)
         return member.status in ("member", "administrator", "creator")
@@ -15,8 +14,7 @@ async def check_subscription(client, user_id):
             chat_member = await client.get_chat_member(f"@{channel}", user_id)
             if chat_member.status in ["left", "kicked"]:
                 return False
-        except Exception as e:
-            print(f"Error checking channel @{channel} for user {user_id}: {e}")
+        except:
             return False
     return True
 
