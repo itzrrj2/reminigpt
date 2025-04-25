@@ -25,13 +25,13 @@ def image_handlers(app):
             await message.reply(
                 "🚫 <b>You must join the required channels to use this bot.</b>\n\nAfter joining, tap <b>I Joined</b>.",
                 reply_markup=InlineKeyboardMarkup(join_buttons),
-                parse_mode="HTML"
+                parse_mode="html"
             )
             return
         else:
             await message.reply("✅ You are verified! Send a photo or image document to begin processing.")
 
-        # Safe file detection
+        # Safe file extraction
         if message.photo:
             file = message.photo[-1] if isinstance(message.photo, list) else message.photo
         elif message.document:
@@ -91,7 +91,7 @@ def image_handlers(app):
                 await callback_query.message.reply(
                     "❌ You still haven't joined all required channels.",
                     reply_markup=InlineKeyboardMarkup(join_buttons),
-                    parse_mode="HTML"
+                    parse_mode="html"
                 )
             return
 
@@ -109,7 +109,7 @@ def image_handlers(app):
                 await callback_query.message.reply(
                     "❌ You still haven't joined all required channels.",
                     reply_markup=InlineKeyboardMarkup(join_buttons),
-                    parse_mode="HTML"
+                    parse_mode="html"
                 )
             return
 
