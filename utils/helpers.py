@@ -40,3 +40,17 @@ async def process_image(image_url, tool):
         async with session.get(url) as resp:
             data = await resp.json()
             return data.get("result", {}).get("resultImageUrl")
+
+from config import REQUIRED_CHANNELS
+
+async def check_subscription(client, user_id):
+    for channel in REQUIRED_CHANNELS:
+        try:
+            chat_member = await client.get_chat_member(f"@{channel}", user_id)
+            if chat_member.status in ["left", "kicked"]:
+                return False
+        except Exception as e:
+            print(f"Error checking channel @{channel} for user {user_id}: {e}")
+            return False
+    return True
+
