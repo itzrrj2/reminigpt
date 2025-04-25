@@ -90,3 +90,12 @@ def image_handlers(app):
             buffer.name = f"{tool}_result.jpg"
 
             await client.send_document(chat_id, buffer, caption=f"{tool.capitalize()}d image ✅")
+
+if not await check_subscription(client, user.id):
+    channels_list = "\n".join([f"👉 [Join @{ch}](https://t.me/{ch})" for ch in REQUIRED_CHANNELS])
+    await message.reply_text(
+        f"⚠️ *You must join the following channels to use this bot:*\n\n{channels_list}",
+        parse_mode="Markdown",
+        disable_web_page_preview=True
+    )
+    return
