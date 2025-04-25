@@ -43,17 +43,33 @@ def image_handlers(app):
              InlineKeyboardButton("Colorize 🌈", callback_data=f"colorize {hosted_url}")],
             [InlineKeyboardButton("Upscale 📈", callback_data=f"upscale {hosted_url}"),
              InlineKeyboardButton("View 🔰", url=hosted_url)],
-            [InlineKeyboardButton("Permanent 🖇️", callback_data=f"permanent {hosted_url}")]
+            [InlineKeyboardButton("Permanent 🖇️", callback_data=f"permanent {hosted_url}")],
+            [InlineKeyboardButton("Back to Menu ⬅️", callback_data="refresh")]
         ])
 
         await message.reply("✅ Image uploaded! Choose what you want to do:", reply_markup=buttons)
-
 
     @app.on_callback_query()
     async def handle_callback(client, callback_query: CallbackQuery):
         data = callback_query.data
         chat_id = callback_query.message.chat.id
+        user_id = callback_query.from_user.id
+        name = callback_query.from_user.first_name
 
+        # Handle checkjoin / refresh
+        if data == "checkjoin" or data == "refresh":
+            if await check_user_in_channel(client, user_id):
+                await callback_query.message.reply("✅ You are a member of the channel! You can use the bot now.")
+            else:
+                buttons = InlineKeyboardMarkup([
+                    [InlineKeyboardButton("Join Channel 📢", url="https://t.me/SR_Robots")],
+                    [InlineKeyboardButton("Check Join Status 🔍", callback_data="checkjoin")],
+                    [InlineKeyboardButton("Refresh 🔄", callback_data="refresh")]
+                ])
+                await callback_query.message.reply(f"Hey {name} 👋\n\n❌ You are not in the channel yet. Please join and try again.", reply_markup=buttons)
+            return
+
+        # Handle image processing tools
         if any(data.startswith(tool) for tool in ['enhance', 'removebg', 'restore', 'colorize', 'upscale']):
             tool, image_url = data.split()
             processing_msg = await callback_query.message.reply(f"🔄 {tool.capitalize()}ing your image...")
@@ -65,7 +81,7 @@ def image_handlers(app):
 
             await processing_msg.edit_text(f"✅ {tool.capitalize()} complete!")
 
-            # Download the result and send as document
+            # Download and send as document
             async with aiohttp.ClientSession() as session:
                 async with session.get(result_url) as resp:
                     image_bytes = await resp.read()
