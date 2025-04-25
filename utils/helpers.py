@@ -1,13 +1,24 @@
 import aiohttp
-from config import CHANNEL_ID, AR_HOSTING_API
+from config import CHANNEL_ID, AR_HOSTING_API, REQUIRED_CHANNELS
 
 async def check_user_in_channel(client, user_id):
-    print(f"Checking user {user_id} in channel {CHANNEL_ID}")  # 🐞 Debug line
+    print(f"Checking user {user_id} in channel {CHANNEL_ID}")
     try:
         member = await client.get_chat_member(CHANNEL_ID, user_id)
         return member.status in ("member", "administrator", "creator")
     except:
         return False
+
+async def check_subscription(client, user_id):
+    for channel in REQUIRED_CHANNELS:
+        try:
+            chat_member = await client.get_chat_member(f"@{channel}", user_id)
+            if chat_member.status in ["left", "kicked"]:
+                return False
+        except Exception as e:
+            print(f"Error checking channel @{channel} for user {user_id}: {e}")
+            return False
+    return True
 
 async def get_file_size(url):
     async with aiohttp.ClientSession() as session:
@@ -40,17 +51,3 @@ async def process_image(image_url, tool):
         async with session.get(url) as resp:
             data = await resp.json()
             return data.get("result", {}).get("resultImageUrl")
-
-from config import REQUIRED_CHANNELS
-
-async def check_subscription(client, user_id):
-    for channel in REQUIRED_CHANNELS:
-        try:
-            chat_member = await client.get_chat_member(f"@{channel}", user_id)
-            if chat_member.status in ["left", "kicked"]:
-                return False
-        except Exception as e:
-            print(f"Error checking channel @{channel} for user {user_id}: {e}")
-            return False
-    return True
-
